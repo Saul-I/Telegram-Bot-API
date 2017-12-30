@@ -52,6 +52,21 @@ class telegramBot
     return $this->sendRequest('getUpdates', $params);
   }
 
+   /**
+   * Delete messages.
+   *
+   * @link https://core.telegram.org/bots/api#sendmessage
+   *
+   * @param int            $chat_id
+   * @param int            $message_id
+   *
+   * @return Array
+   */
+  public function deleteMessage($chat_id,$message_id){
+    $params = compact('chat_id', 'message_id');
+
+    return $this->sendRequest('deleteMessage', $params);
+  }
   /**
    * Send text messages.
    *
@@ -73,6 +88,49 @@ class telegramBot
     return $this->sendRequest('sendMessage', $params);
   }
 
+
+  /**
+   * Edit text messages.
+   *
+   * @link https://core.telegram.org/bots/api#edittextmessage
+   *
+   * @param int            $chat_id
+   * @param string         $message_id
+   * @param string         $inline_message_id
+   * @param string         $text
+   * @param string         $parse_mode
+   * @param bool           $disable_web_page_preview
+   * @param KeyboardMarkup $reply_markup
+   *
+   * @return Array
+   */
+  public function editMessageText($chat_id = null, $message_id = null, $inline_message_id = null, $text, $parse_mode = null, $disable_web_page_preview = false, $reply_markup = null)
+  {
+    $params = compact('chat_id', 'message_id', 'inline_message_id', 'text', 'parse_mode', 'disable_web_page_preview','reply_markup');
+
+    return $this->sendRequest('editMessageText', $params);
+  }
+
+    /**
+   * Edit text caption.
+   *
+   * @link https://core.telegram.org/bots/api#edittextmessage
+   *
+   * @param int            $chat_id
+   * @param string         $message_id
+   * @param string         $inline_message_id
+   * @param string         $caption
+   * @param KeyboardMarkup $reply_markup
+   *
+   * @return Array
+   */
+  public function editMessageCaption($chat_id = null, $message_id = null, $inline_message_id = null, $caption = null, $reply_markup = null)
+  {
+    $params = compact('chat_id', 'message_id', 'inline_message_id', 'caption','reply_markup');
+
+    return $this->sendRequest('editMessageCaption', $params);
+  }
+
   /**
    * Forward messages of any kind.
    *
@@ -92,6 +150,26 @@ class telegramBot
   }
 
   /**
+   * Answer Callback.
+   *
+   * @link https://core.telegram.org/bots/api#sendmessage
+   *
+   * @param int            $chat_id
+   * @param string         $text
+   * @param string         $parse_mode
+   * @param bool           $disable_web_page_preview
+   * @param int            $reply_to_message_id
+   * @param KeyboardMarkup $reply_markup
+   *
+   * @return Array
+   */
+  public function answerCallbackQuery($callback_query_id,$text = null, $show_alert = false, $url = null, $cache_time = 0)
+  {
+    $params = compact('callback_query_id', 'text', 'show_alert', 'url', 'cache_time');
+
+    return $this->sendRequest('answerCallbackQuery', $params);
+  }
+  /**
    * Send Photos.
    *
    * @link https://core.telegram.org/bots/api#sendphoto
@@ -107,11 +185,10 @@ class telegramBot
   public function sendPhoto($chat_id, $photo, $caption = null, $reply_to_message_id = null, $reply_markup = null)
   {
     $data = compact('chat_id', 'photo', 'caption', 'reply_to_message_id', 'reply_markup');
-
+    if ($this->isLocalFile($photo))
+      return $this->uploadFile('sendPhoto', $data);
     if (((!is_dir($photo)) && (filter_var($photo, FILTER_VALIDATE_URL) === FALSE)))
       return $this->sendRequest('sendPhoto', $data);
-
-    return $this->uploadFile('sendPhoto', $data);
   }
 
   /**
@@ -220,9 +297,9 @@ class telegramBot
    *
    * @return Array
    */
-  public function sendVoice($chat_id, $audio, $duration = null, $reply_to_message_id = null, $reply_markup = null)
+  public function sendVoice($chat_id, $voice, $duration = null,$caption = null, $reply_to_message_id = null, $reply_markup = null)
   {
-    $data = compact('chat_id', 'audio', 'duration', 'reply_to_message_id', 'reply_markup');
+    $data = compact('chat_id', 'voice', 'duration','caption', 'reply_to_message_id', 'reply_markup');
 
     if (((!is_dir($audio)) && (filter_var($audio, FILTER_VALIDATE_URL) === FALSE)))
       return $this->sendRequest('sendVoice', $data);
@@ -430,6 +507,23 @@ class telegramBot
     return json_encode(compact('keyboard', 'resize_keyboard', 'one_time_keyboard', 'selective'));
  }
 
+  /**
+  * Builds a custom keyboard markup.
+  *
+  * @link https://core.telegram.org/bots/api#replykeyboardmarkup
+  *
+  * @param array $keyboard
+  * @param bool  $resize_keyboard
+  * @param bool  $one_time_keyboard
+  * @param bool  $selective
+  *
+  * @return string
+  */
+ public function inlineKeyboardMarkup($inline_keyboard)
+ {
+    return json_encode(compact('inline_keyboard'));
+ }
+
  /**
   * Hide the current custom keyboard and display the default letter-keyboard.
   *
@@ -459,6 +553,13 @@ class telegramBot
     $force_reply = true;
     return json_encode(compact('force_reply', 'selective'));
  }
+
+  private function isLocalFile($file){
+    $file = explode("/", $file);
+    unset($file[sizeof($file)-1]);
+    $file = implode("/", $file);
+    return is_dir($file);
+  }
 
   private function sendRequest($method, $params)
   {
